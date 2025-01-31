@@ -1,1 +1,0 @@
-# Basic-Translate-With-Voice
