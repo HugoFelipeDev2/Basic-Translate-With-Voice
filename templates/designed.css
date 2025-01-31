@@ -1,0 +1,7 @@
+#copyButton {
+    background: #4CAF50 !important;
+}
+
+#copyButton:hover {
+    background: #45a049 !important;
+}

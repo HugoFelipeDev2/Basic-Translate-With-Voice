@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Translate With Voice Api</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #5c6bc0;
+            --success-color: #43a047;
+            --background-gradient: linear-gradient(135deg, #4a90e2 0%, #5c6bc0 100%);
+            --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --border-radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--background-gradient);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .translation-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .select-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .controls-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .language-select {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            background: #fff;
+            transition: border-color 0.3s ease;
+        }
+
+        .language-select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .control-button {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .control-button:hover {
+            background: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        .swap-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .swap-button:hover {
+            background: var(--secondary-color);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .control-button.active {
+            background: #e74c3c;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        textarea {
+            width: 100%;
+            height: 250px;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            resize: none;
+            background: #fff;
+            line-height: 1.5;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 14px 30px;
+            min-width: 200px;
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+        }
+
+        .btn-success:hover {
+            background: #388e3c;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #ddd;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        footer {
+            color: white;
+            text-align: center;
+            padding: 20px;
+            width: 100%;
+            margin-top: auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .translation-box {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            h1 {
+                font-size: 2rem;
+                margin-bottom: 30px;
+            }
+
+            .swap-button {
+                top: calc(50% - 20px);
+                transform: translate(-50%, -50%) rotate(90deg);
+            }
+
+            .swap-button:hover {
+                transform: translate(-50%, -50%) rotate(90deg) scale(1.1);
+            }
+        }
+    </style>
+
+<link rel="icon" type="image/x-icon" href="images/favicon.png" sizes="512x512"></head>
+</head>
+<body>
+    
+    <div class="container">
+        <h1>Basic Translate With Voice</h1>
+        <div class="translation-box">
+            <div class="input-group">
+                <div class="select-wrapper">
+                    <select id="fromLang" class="language-select"></select>
+                    <div class="controls-wrapper">
+                        <button id="microphoneButton" class="control-button" title="Iniciar reconhecimento de voz" onclick="startVoiceRecognition()">🎤</button>
+                    </div>
+                </div>
+                <textarea id="sourceText" placeholder="Digite ou fale o texto para traduzir..."></textarea>
+            </div>
+            <button id="swapButton" class="swap-button" title="Trocar idiomas" onclick="swapLanguages()">⇄</button>
+            <div class="input-group">
+                <div class="select-wrapper">
+                    <select id="toLang" class="language-select"></select>
+                    <div class="controls-wrapper">
+                        <button id="speakButton" class="control-button" title="Ouvir pronuncia" onclick="speakText()">🔊</button>
+                        <button id="stopSpeakButton" class="control-button" title="Parar pronúncia" onclick="stopSpeaking()">⏹️</button>
+                    </div>
+                </div>
+                <textarea id="translatedText" placeholder="A tradução aparecerá aqui..." readonly></textarea>
+            </div>
+        </div>
+        <div id="loading" class="loading"></div>
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="translateText()">
+                <span>Traduzir</span>
+            </button>
+            <button id="copyButton" class="btn btn-success" style="display: none;" onclick="copyTranslatedText()">
+                <span>Copiar</span>
+            </button>
+        </div>
+    </div>
+    <footer>
+        <p>© 2025 Basic Translate With Voice API by Fat Prod (BR) Github and powered by MarianMT and Argos.Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+        const languages = {
+            'auto': 'Please Select Language',
+            'pt': 'Português (Portuguese Standart)',
+            'en': 'English (English/United States)',
+            'es': 'Español (Spanish)',
+            'de': 'Deutsch (German)',
+            'ca': 'Català (Catalan)',
+            'zt':' 简体中文(Chinese Simplified/without voice support)',
+            'eu': 'Euskara (Basque)',
+            'fr': 'Français (French)',
+            'it': 'Italiano (Italian)',
+            'ja': '日本語 (Japanese)',
+            'pl': 'Polski (Polish)',
+            'hr': 'Hrvatski (Croatian)',
+            'sk': 'Slovenský (Slovakian)',
+            'sl': 'Slovenščina (Slovenian)',
+            'ru': 'Русский (Russian)',
+            'bg': 'Български (Bulgarian)',
+            'sv': 'Svenska (Swedish)',
+            'fi': 'Suomi (Finnish)',
+            'cs': 'Čeština (Czech Rep)',
+            'ro': 'Română (Romanian)',
+            'da': 'Dansk (Denmark)',
+            'el': 'Ελληνικά (Greek)',
+            'tr': 'Türkçe (Turkish)',
+            'th': 'ไทย (Thailand)',
+            'nl': 'Nederlands (Ducth)',
+            'hu': 'Magyar (Hungarian)',
+            'ga': 'Gaeilge (Irish)',
+            'et': 'Eesti (Estonian)',
+            'uk': 'українська (Ukranian)',
+            'sq': 'Shqip (Albanian)',
+            'ms': 'Melayu (Malaian)',
+            'ko': '한국인 (Korean)',
+            'lv': 'Latviešu (Latvian)',
+            'lt': 'Lietuvių Kalba (Lithuanian)',
+            'nb': 'Norsk (Norwegian)',
+        };
+
+        function loadLanguages() {
+    const fromSelect = document.getElementById('fromLang');
+    const toSelect = document.getElementById('toLang');
+
+    Object.entries(languages).forEach(([code, name]) => {
+        fromSelect.add(new Option(name, code));
+        toSelect.add(new Option(name, code));
+    });
+
+    fromSelect.value = 'auto';
+    toSelect.value = 'pt';
+}
+
+function loadLanguages() {
+    const fromSelect = document.getElementById('fromLang');
+    const toSelect = document.getElementById('toLang');
+
+    Object.entries(languages).forEach(([code, name]) => {
+        fromSelect.add(new Option(name, code));
+        toSelect.add(new Option(name, code));
+    });
+
+    fromSelect.value = 'auto';
+    toSelect.value = 'pt';
+}
+
+function loadLanguages() {
+    const fromSelect = document.getElementById('fromLang');
+    const toSelect = document.getElementById('toLang');
+
+    Object.entries(languages).forEach(([code, name]) => {
+        fromSelect.add(new Option(name, code));
+        toSelect.add(new Option(name, code));
+    });
+
+    fromSelect.value = 'auto';
+    toSelect.value = 'pt';
+}
+
+function swapLanguages() {
+    const fromSelect = document.getElementById('fromLang');
+    const toSelect = document.getElementById('toLang');
+    const sourceText = document.getElementById('sourceText');
+    const translatedText = document.getElementById('translatedText');
+
+    if (fromSelect.value === 'auto') {
+        alert('Não é possível trocar quando o idioma de origem está em "Detectar idioma".');
+        return;
+    }
+
+    const tempLang = fromSelect.value;
+    fromSelect.value = toSelect.value;
+    toSelect.value = tempLang;
+
+    const tempText = sourceText.value;
+    sourceText.value = translatedText.value;
+    translatedText.value = tempText;
+}
+
+async function translateText() {
+    const loading = document.getElementById('loading');
+    const sourceText = document.getElementById('sourceText').value;
+    const fromLang = document.getElementById('fromLang').value;
+    const toLang = document.getElementById('toLang').value;
+    const translatedText = document.getElementById('translatedText');
+    const copyButton = document.getElementById('copyButton');
+
+    if (!sourceText) {
+        alert('Por favor, digite ou fale um texto para traduzir.');
+        return;
+    }
+
+    loading.style.display = 'block';
+    copyButton.style.display = 'none';
+
+    try {
+        const response = await axios.post('http://localhost:8000/translate', {
+            text: sourceText,
+            from_lang: fromLang,
+            to_lang: toLang
+        });
+
+        translatedText.value = response.data.translated_text;
+        if (response.data.translated_text) {
+            copyButton.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Erro na tradução:', error);
+        translatedText.value = 'Erro ao traduzir. Por favor, tente novamente.';
+        copyButton.style.display = 'none';
+    } finally {
+        loading.style.display = 'none';
+    }
+}
+
+function speakText() {
+    const text = document.getElementById('translatedText').value;
+    const toLang = document.getElementById('toLang').value;
+
+    if (!text) {
+        alert('Não há texto para reproduzir.');
+        return;
+    }
+
+    const synthesis = window.speechSynthesis;
+    synthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = toLang;
+    synthesis.speak(utterance);
+}
+
+function stopSpeaking() {
+    const synthesis = window.speechSynthesis;
+    synthesis.cancel();
+}
+
+function startVoiceRecognition() {
+    const sourceText = document.getElementById('sourceText');
+    const micButton = document.getElementById('microphoneButton');
+
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+        alert('Reconhecimento de voz não é suportado neste navegador.');
+        return;
+    }
+
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = document.getElementById('fromLang').value || 'auto';
+    recognition.continuous = false; // Melhorando precisão com reconhecimento não contínuo
+    recognition.interimResults = false; // Focando apenas em resultados finais
+
+    let timeoutId; // Variável para armazenar o ID do temporizador
+
+    recognition.onstart = () => {
+        micButton.classList.add('active');
+        micButton.title = 'Reconhecimento de voz em andamento';
+        clearTimeout(timeoutId); // Limpa o temporizador se o reconhecimento recomeçar
+    };
+
+    recognition.onend = () => {
+        micButton.classList.remove('active');
+        micButton.title = 'Iniciar reconhecimento de voz';
+    };
+
+    recognition.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                sourceText.value += transcript;
+            }
+        }
+    };
+
+    recognition.onerror = (event) => {
+        console.error('Erro no reconhecimento de voz:', event.error);
+        alert('Erro no reconhecimento de voz: ' + event.error);
+    };
+
+    recognition.onspeechend = () => {
+        recognition.stop();
+        timeoutId = setTimeout(() => {
+            recognition.stop();
+            micButton.classList.remove('active');
+        }, 5000); // Parar reconhecimento após 5 segundos de inatividade
+    };
+
+    micButton.addEventListener('click', () => {
+        if (micButton.classList.contains('active')) {
+            recognition.stop();
+        } else {
+            recognition.start();
+        }
+    });
+}
+
+function copyTranslatedText() {
+    const translatedText = document.getElementById('translatedText');
+
+    if (!translatedText.value) {
+        alert('Não há texto para copiar.');
+        return;
+    }
+
+    navigator.clipboard.writeText(translatedText.value)
+        .then(() => {
+            const copyButton = document.getElementById('copyButton');
+            copyButton.innerHTML = '<span>Copiado! ✓</span>';
+            setTimeout(() => {
+                copyButton.innerHTML = '<span>Copiar</span>';
+            }, 2000);
+        })
+        .catch((err) => {
+            console.error('Erro ao copiar:', err);
+            alert('Erro ao copiar o texto. Por favor, tente novamente.');
+        });
+}
+
+loadLanguages();
+
+     </script>
+</body>
+</html>
