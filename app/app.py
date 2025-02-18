@@ -1,3 +1,4 @@
+
 import os
 import subprocess
 from fastapi import FastAPI, HTTPException, Request
@@ -43,7 +44,7 @@ def download_libraries():
     folder_url = os.getenv("ARGOS_MODELS_URL", "https://drive.google.com/drive/u/0/folders/1QyY1Bfa0x8hWgCVc9uQmSnbSnALrTRdF")
     if not os.path.exists(argos_model_path):
         os.makedirs(argos_model_path, exist_ok=True)
-        comando = f'gdown --folder "{folder_url}" -O {argos_model_path}'
+        comando = f'gdown --folder "{folder_url}" --remaining-ok -O {argos_model_path}'
         print("Baixando arquivos da pasta:", folder_url)
         subprocess.run(comando, shell=True)
     else:
