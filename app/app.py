@@ -1,4 +1,5 @@
 import os
+import subprocess
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,11 +30,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Carregamento de modelos
-argos_model_path = "F:\\Basic-Translate-With-Voice-main\\libraries"
-argos_models = [argostranslate.package.install_from_path(os.path.join(argos_model_path, m)) 
-               for m in os.listdir(argos_model_path)]
+# Configurações dos modelos Argos
+# Aqui definimos o caminho local para os modelos
+argos_model_path = os.getenv("ARGOS_MODELS_DESTINO", "libraries")
+# Essa variável global será inicializada no startup
+argos_models = []
 
+def download_libraries():
+    """
+    Faz o download da pasta de modelos do Google Drive utilizando gdown.
+    """
+    folder_url = os.getenv("ARGOS_MODELS_URL", "https://drive.google.com/drive/u/0/folders/1QyY1Bfa0x8hWgCVc9uQmSnbSnALrTRdF")
+    if not os.path.exists(argos_model_path):
+        os.makedirs(argos_model_path, exist_ok=True)
+        comando = f'gdown --folder "{folder_url}" -O {argos_model_path}'
+        print("Baixando arquivos da pasta:", folder_url)
+        subprocess.run(comando, shell=True)
+    else:
+        print(f"Pasta '{argos_model_path}' já existe. Pulando download.")
+
+@app.on_event("startup")
+async def startup_event():
+    # Baixa os arquivos de modelos do Google Drive, se necessário
+    download_libraries()
+    # Após o download, carrega os modelos Argos da pasta
+    global argos_models
+    try:
+        argos_models = [
+            argostranslate.package.install_from_path(os.path.join(argos_model_path, m))
+            for m in os.listdir(argos_model_path)
+        ]
+        print("Modelos Argos carregados com sucesso.")
+    except Exception as e:
+        print("Erro ao carregar os modelos Argos:", e)
 
 # Modelos MarianMT
 MARIAN_MODELS = {
@@ -54,9 +83,9 @@ def get_argos_translation(from_lang, to_lang):
     cache_key = f"{from_lang}-{to_lang}"
     if cache_key not in translation_cache:
         installed = argostranslate.translate.get_installed_languages()
-        from_lang = next((l for l in installed if l.code == from_lang), None)
-        to_lang = next((l for l in installed if l.code == to_lang), None)
-        translation_cache[cache_key] = from_lang.get_translation(to_lang) if from_lang and to_lang else None
+        from_lang_obj = next((l for l in installed if l.code == from_lang), None)
+        to_lang_obj = next((l for l in installed if l.code == to_lang), None)
+        translation_cache[cache_key] = from_lang_obj.get_translation(to_lang_obj) if from_lang_obj and to_lang_obj else None
     return translation_cache[cache_key]
 
 # Função de tradução otimizada
@@ -82,24 +111,24 @@ async def marian_translate(text, from_lang, to_lang):
     model_key = f"{from_lang}-{to_lang}"
     if model_key not in MARIAN_MODELS:
         raise HTTPException(400, "Combinação de idiomas não suportada")
-    
+   
     tokenizer, model = load_marian_model(MARIAN_MODELS[model_key])
     loop = asyncio.get_event_loop()
-    
+   
     def _translate():
         inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
         outputs = model.generate(**inputs)
         return tokenizer.decode(outputs[0], skip_special_tokens=True)
-    
+   
     return await loop.run_in_executor(executor, _translate)
 
 async def argos_translate(text, from_lang, to_lang):
     loop = asyncio.get_event_loop()
     translation = get_argos_translation(from_lang, to_lang)
-    
+   
     if not translation:
         raise HTTPException(400, "Tradução não suportada")
-    
+   
     return await loop.run_in_executor(executor, translation.translate, text)
 
 # Dicionário de idiomas suportados
@@ -167,11 +196,9 @@ async def single_translate(request: TranslateRequest):
 @app.post("/translate/all/")
 async def batch_translate(request: BatchRequest):
     try:
-        tasks = [translate_text(item.text, request.from_lang, request.to_lang) 
-                for item in request.texts]
-        
+        tasks = [translate_text(item.text, request.from_lang, request.to_lang)
+                 for item in request.texts]
         translated_texts = await asyncio.gather(*tasks)
-        
         return {item.key: text for item, text in zip(request.texts, translated_texts)}
     except Exception as e:
         raise HTTPException(500, str(e))
