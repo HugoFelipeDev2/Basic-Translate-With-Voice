@@ -10,6 +10,7 @@ import argostranslate.translate
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
 from functools import lru_cache
+import gdown
 
 # Inicialização do FastAPI
 app = FastAPI()
