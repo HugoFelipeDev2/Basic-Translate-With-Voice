@@ -1,1 +1,1 @@
-Enter in my websiteproject for tests; basictranslatewithvoice.infinityfreeapp.com
+Enter in my project for tests; basictranslatewithvoice.infinityfreeapp.com
