@@ -1,1 +1,1 @@
-Enter my test project; basictranslatewithvoice.infinityfreeapp.com
+Join my project for testing; basictranslatewithvoice.infinityfreeapp.com
