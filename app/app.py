@@ -42,7 +42,7 @@ def download_libraries():
     Faz o download das pastas de modelos do Google Drive utilizando gdown.
     """
     folder_urls = [
-        os.getenv("ARGOS_MODELS_URL_1", "https://drive.google.com/drive/u/0/folders/URL_DE_COMPARTILHAMENTO_1"),
+        os.getenv("ARGOS_MODELS_URL_1", "https://drive.google.com/drive/u/0/folders/1QyY1Bfa0x8hWgCVc9uQmSnbSnALrTRdF"),
         os.getenv("ARGOS_MODELS_URL_2", "https://drive.google.com/drive/u/1/folders/1StDZgXG2Q2wIClzKcoJQJfEv_xc8RLAo")
     ]
     
