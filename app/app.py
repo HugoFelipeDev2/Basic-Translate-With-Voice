@@ -39,6 +39,9 @@ argos_models = []
 # Definindo o caminho dos modelos
 argos_model_path = 'caminho_para_modelos_argos'
 
+# Definindo o caminho dos modelos
+argos_model_path = 'caminho_para_modelos_argos'
+
 def download_from_drive(folder_url, output_path):
     if not os.path.exists(output_path):
         os.makedirs(output_path, exist_ok=True)
@@ -52,26 +55,17 @@ def download_libraries():
     """
     Faz o download das pastas de modelos do Google Drive utilizando gdown.
     """
-    # URL das pastas no Google Drive
+    # URLs das pastas no Google Drive
     folder_urls = [
-        os.getenv("ARGOS_MODELS_URL_1", "https://drive.google.com/drive/u/0/folders/https://drive.google.com/drive/u/0/folders/1QyY1Bfa0x8hWgCVc9uQmSnbSnALrTRdF"),
+        os.getenv("ARGOS_MODELS_URL_1", "https://drive.google.com/drive/u/0/folders/1QyY1Bfa0x8hWgCVc9uQmSnbSnALrTRdF"),
         os.getenv("ARGOS_MODELS_URL_2", "https://drive.google.com/drive/u/1/folders/1StDZgXG2Q2wIClzKcoJQJfEv_xc8RLAo")
     ]
     
-    # Baixa todos os arquivos da Conta 1
+    # Baixa os arquivos da Conta 1
     download_from_drive(folder_urls[0], os.path.join(argos_model_path, 'modelos_conta_1'))
     
-    # Baixa somente os arquivos necessários da Conta 2
-    download_path_2 = os.path.join(argos_model_path, 'modelos_conta_2')
-    if not os.path.exists(download_path_2):
-        os.makedirs(download_path_2, exist_ok=True)
-        for file_id in ["1vZFxoZrhH6V7APpxfs4xD0MYcDPz_U_T", "1LiijbZ1UTe2bSj2ifusjH3ywPpZXH1RP", "16ghz1WV1lWH_9rg7zU1A7Nr1raUcsNGY"]:  # IDs dos arquivos na conta 2
-            file_url = f"https://drive.google.com/uc?id={file_id}"
-            comando = f'gdown {file_url} -O {download_path_2}'
-            print(f"Baixando arquivo: {file_id}")
-            subprocess.run(comando, shell=True)
-    else:
-        print(f"Pasta '{download_path_2}' já existe. Pulando download.")
+    # Baixa os arquivos da Conta 2
+    download_from_drive(folder_urls[1], os.path.join(argos_model_path, 'modelos_conta_2'))
 
 @app.on_event("startup")
 async def startup_event():
@@ -82,19 +76,18 @@ async def startup_event():
     try:
         argos_models = []
         
-        # Carregar todos os modelos da Conta 1
+        # Carregar os modelos da Conta 1
         download_path_1 = os.path.join(argos_model_path, 'modelos_conta_1')
         argos_models.extend([
             argostranslate.package.install_from_path(os.path.join(download_path_1, m))
             for m in os.listdir(download_path_1)
         ])
         
-        # Carregar apenas os modelos específicos da Conta 2
+        # Carregar os modelos da Conta 2
         download_path_2 = os.path.join(argos_model_path, 'modelos_conta_2')
-        modelos_validos = [m for m in os.listdir(download_path_2) if '-en' in m and m.index('-en') > 0]
         argos_models.extend([
             argostranslate.package.install_from_path(os.path.join(download_path_2, m))
-            for m in modelos_validos
+            for m in os.listdir(download_path_2)
         ])
         
         print("Modelos Argos carregados com sucesso.")
