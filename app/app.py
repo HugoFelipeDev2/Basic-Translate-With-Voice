@@ -36,25 +36,42 @@ app.add_middleware(
 argos_model_path = os.getenv("ARGOS_MODELS_DESTINO", "libraries")
 # Essa variável global será inicializada no startup
 argos_models = []
+# Definindo o caminho dos modelos
+argos_model_path = 'caminho_para_modelos_argos'
+
+def download_from_drive(folder_url, output_path):
+    if not os.path.exists(output_path):
+        os.makedirs(output_path, exist_ok=True)
+        comando = f'gdown --folder "{folder_url}" --remaining-ok -O {output_path}'
+        print(f"Baixando arquivos da pasta: {folder_url}")
+        subprocess.run(comando, shell=True)
+    else:
+        print(f"Pasta '{output_path}' já existe. Pulando download.")
 
 def download_libraries():
     """
     Faz o download das pastas de modelos do Google Drive utilizando gdown.
     """
+    # URL das pastas no Google Drive
     folder_urls = [
-        os.getenv("ARGOS_MODELS_URL_1", "https://drive.google.com/drive/u/0/folders/1QyY1Bfa0x8hWgCVc9uQmSnbSnALrTRdF"),
+        os.getenv("ARGOS_MODELS_URL_1", "https://drive.google.com/drive/u/0/folders/https://drive.google.com/drive/u/0/folders/1QyY1Bfa0x8hWgCVc9uQmSnbSnALrTRdF"),
         os.getenv("ARGOS_MODELS_URL_2", "https://drive.google.com/drive/u/1/folders/1StDZgXG2Q2wIClzKcoJQJfEv_xc8RLAo")
     ]
     
-    for i, folder_url in enumerate(folder_urls, start=1):
-        download_path = os.path.join(argos_model_path, f'modelos_conta_{i}')
-        if not os.path.exists(download_path):
-            os.makedirs(download_path, exist_ok=True)
-            comando = f'gdown --folder "{folder_url}" --remaining-ok -O {download_path}'
-            print(f"Baixando arquivos da pasta {i}: {folder_url}")
+    # Baixa todos os arquivos da Conta 1
+    download_from_drive(folder_urls[0], os.path.join(argos_model_path, 'modelos_conta_1'))
+    
+    # Baixa somente os arquivos necessários da Conta 2
+    download_path_2 = os.path.join(argos_model_path, 'modelos_conta_2')
+    if not os.path.exists(download_path_2):
+        os.makedirs(download_path_2, exist_ok=True)
+        for file_id in ["1vZFxoZrhH6V7APpxfs4xD0MYcDPz_U_T", "1LiijbZ1UTe2bSj2ifusjH3ywPpZXH1RP", "16ghz1WV1lWH_9rg7zU1A7Nr1raUcsNGY"]:  # IDs dos arquivos na conta 2
+            file_url = f"https://drive.google.com/uc?id={file_id}"
+            comando = f'gdown {file_url} -O {download_path_2}'
+            print(f"Baixando arquivo: {file_id}")
             subprocess.run(comando, shell=True)
-        else:
-            print(f"Pasta '{download_path}' já existe. Pulando download.")
+    else:
+        print(f"Pasta '{download_path_2}' já existe. Pulando download.")
 
 @app.on_event("startup")
 async def startup_event():
