@@ -39,16 +39,22 @@ argos_models = []
 
 def download_libraries():
     """
-    Faz o download da pasta de modelos do Google Drive utilizando gdown.
+    Faz o download das pastas de modelos do Google Drive utilizando gdown.
     """
-    folder_url = os.getenv("ARGOS_MODELS_URL", "https://drive.google.com/drive/u/0/folders/1QyY1Bfa0x8hWgCVc9uQmSnbSnALrTRdF")
-    if not os.path.exists(argos_model_path):
-        os.makedirs(argos_model_path, exist_ok=True)
-        comando = f'gdown --folder "{folder_url}" --remaining-ok -O {argos_model_path}'
-        print("Baixando arquivos da pasta:", folder_url)
-        subprocess.run(comando, shell=True)
-    else:
-        print(f"Pasta '{argos_model_path}' já existe. Pulando download.")
+    folder_urls = [
+        os.getenv("ARGOS_MODELS_URL_1", "https://drive.google.com/drive/u/0/folders/URL_DE_COMPARTILHAMENTO_1"),
+        os.getenv("ARGOS_MODELS_URL_2", "https://drive.google.com/drive/u/1/folders/1StDZgXG2Q2wIClzKcoJQJfEv_xc8RLAo")
+    ]
+    
+    for i, folder_url in enumerate(folder_urls, start=1):
+        download_path = os.path.join(argos_model_path, f'modelos_conta_{i}')
+        if not os.path.exists(download_path):
+            os.makedirs(download_path, exist_ok=True)
+            comando = f'gdown --folder "{folder_url}" --remaining-ok -O {download_path}'
+            print(f"Baixando arquivos da pasta {i}: {folder_url}")
+            subprocess.run(comando, shell=True)
+        else:
+            print(f"Pasta '{download_path}' já existe. Pulando download.")
 
 @app.on_event("startup")
 async def startup_event():
@@ -57,10 +63,23 @@ async def startup_event():
     # Após o download, carrega os modelos Argos da pasta
     global argos_models
     try:
-        argos_models = [
-            argostranslate.package.install_from_path(os.path.join(argos_model_path, m))
-            for m in os.listdir(argos_model_path)
-        ]
+        argos_models = []
+        
+        # Carregar todos os modelos da Conta 1
+        download_path_1 = os.path.join(argos_model_path, 'modelos_conta_1')
+        argos_models.extend([
+            argostranslate.package.install_from_path(os.path.join(download_path_1, m))
+            for m in os.listdir(download_path_1)
+        ])
+        
+        # Carregar apenas os modelos específicos da Conta 2
+        download_path_2 = os.path.join(argos_model_path, 'modelos_conta_2')
+        modelos_validos = [m for m in os.listdir(download_path_2) if '-en' in m and m.index('-en') > 0]
+        argos_models.extend([
+            argostranslate.package.install_from_path(os.path.join(download_path_2, m))
+            for m in modelos_validos
+        ])
+        
         print("Modelos Argos carregados com sucesso.")
     except Exception as e:
         print("Erro ao carregar os modelos Argos:", e)
