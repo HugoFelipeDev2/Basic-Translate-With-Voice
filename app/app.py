@@ -35,12 +35,12 @@ app.add_middleware(
 argos_model_path = os.getenv("ARGOS_MODELS_DESTINO", "libraries")
 # Essa variável global será inicializada no startup
 argos_models = []
-# Definindo o caminho dos modelos
-argos_model_path = 'caminho_para_modelos_argos'
+# Caminho relativo para a pasta "libraries"
+argos_model_path = os.path.join(os.path.dirname(__file__), "libraries")
 
 def download_libraries():
     """
-    # Faz o download das pastas de modelos do Mega e do pCloud utilizando links diretos.
+    Faz o download das pastas de modelos do Mega e do pCloud utilizando links diretos.
     """
     mega_urls = [
         "https://mega.nz/file/JP91kAZQ#yihXJcXCYN7WsjYTY728L0ZN7mFvFr0rXbJHT35K3mE",
@@ -80,11 +80,10 @@ def download_libraries():
         "https://mega.nz/file/sS0W1BLS#rX--6p7w7kve2K4dsWAjc7pLD_kU0mr5XCGs-flcWSo",
         "https://mega.nz/file/lH1hFTpT#Aaaxija__JulKZsJb8gR2kzvsjxLOTPMoy3sgG8eDAQ",
         "https://mega.nz/file/ZWcFAZbA#wEP7mxDcvgAq2bxPgc69su_LKrQDDMn1bIEzq7q8lCQ"
-
     ]
     
     pcloud_urls = [
-        "https://u.pcloud.link/publink/show?code=XZbirL5ZmOOjtN22jCz5Kti0b5dD6FFjswAX",
+       "https://u.pcloud.link/publink/show?code=XZbirL5ZmOOjtN22jCz5Kti0b5dD6FFjswAX",
         "https://u.pcloud.link/publink/show?code=XZsirL5ZB5IDmhDpb5yHjYPmgVp5qyqJNOKV",
         "https://u.pcloud.link/publink/show?code=XZTirL5ZwNup43FCmT5JA5p2OsgjhuCquuMk",
         "https://u.pcloud.link/publink/show?code=XZlirL5Zzsz1gxCvvCzaAQGCH4l9g72bYetX",
@@ -119,7 +118,6 @@ def download_libraries():
         "https://u.pcloud.link/publink/show?code=XZvorL5ZmLjK7WhHJrR6oiebn5c2hJK8zrD7",
         "https://u.pcloud.link/publink/show?code=XZrorL5ZL7vjRO0MkpLhEvdhMMySQm6jsaTX",
         "https://u.pcloud.link/publink/show?code=XZyycL5ZzE7UJ73aLAzgJSeCvXKI6JRmSih7"
-        
     ]
     
     if not os.path.exists(argos_model_path):
@@ -146,36 +144,8 @@ async def startup_event():
     try:
         argos_models = [
             argostranslate.package.install_from_path(os.path.join(argos_model_path, m))
-            for m in os.listdir(argos_model_path)
+            for m in os.listdir(argos_model_path) if m.endswith('.argosmodel')
         ]
-        print("Modelos Argos carregados com sucesso.")
-    except Exception as e:
-        print("Erro ao carregar os modelos Argos:", e)
-
-
-@app.on_event("startup")
-async def startup_event():
-    # Baixa os arquivos de modelos do Google Drive, se necessário
-    download_libraries()
-    # Após o download, carrega os modelos Argos da pasta
-    global argos_models
-    try:
-        argos_models = []
-        
-        # Carregar os modelos da Conta 1
-        download_path_1 = os.path.join(argos_model_path, 'modelos_conta_1')
-        argos_models.extend([
-            argostranslate.package.install_from_path(os.path.join(download_path_1, m))
-            for m in os.listdir(download_path_1)
-        ])
-        
-        # Carregar os modelos da Conta 2
-        download_path_2 = os.path.join(argos_model_path, 'modelos_conta_2')
-        argos_models.extend([
-            argostranslate.package.install_from_path(os.path.join(download_path_2, m))
-            for m in os.listdir(download_path_2)
-        ])
-        
         print("Modelos Argos carregados com sucesso.")
     except Exception as e:
         print("Erro ao carregar os modelos Argos:", e)
